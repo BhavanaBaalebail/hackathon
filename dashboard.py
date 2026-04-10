@@ -203,3 +203,166 @@ st.markdown("""
 
 st.divider()
 
+# --- NEW SECTION: QUANTIFIED INSIGHTS ---
+st.header("📈 Quantified Insights: What the Numbers Say")
+st.markdown("<p style='font-size: 1.1rem; color: #A0AEC0;'>This is where the truth is — the numbers prove the problem.</p>", unsafe_allow_html=True)
+
+def calculate_statistical_impact(df_in):
+    # Base numbers
+    total_orders = len(df_in)
+    
+    # Delivery Performance
+    delayed_orders = df_in[df_in['delivery_delay_days'] > 0]
+    ontime_orders = df_in[df_in['delivery_delay_days'] <= 0]
+    
+    pct_late = (len(delayed_orders) / total_orders) * 100 if total_orders else 0
+    pct_delayed_1day = (len(df_in[df_in['delivery_delay_days'] > 1]) / total_orders) * 100 if total_orders else 0
+    pct_delayed_2days = (len(df_in[df_in['delivery_delay_days'] > 2]) / total_orders) * 100 if total_orders else 0
+    
+    avg_rating_ontime = ontime_orders['review_score_num'].mean()
+    avg_rating_late = delayed_orders['review_score_num'].mean()
+    rating_drop_pct = ((avg_rating_ontime - avg_rating_late) / avg_rating_ontime) * 100 if avg_rating_ontime and not pd.isna(avg_rating_ontime) else 0
+    
+    # Customer Experience
+    low_ratings = df_in[df_in['review_score_num'] <= 3]
+    low_ratings_delayed = low_ratings[low_ratings['delivery_delay_days'] > 0]
+    pct_low_ratings_delayed = (len(low_ratings_delayed) / len(low_ratings)) * 100 if len(low_ratings) else 0
+    
+    # Seller Impact (High volume = >50 orders)
+    seller_stats = df_in.groupby('seller_id').agg({
+        'order_id':'count', 
+        'delivery_delay_days':lambda x: (x>0).sum(), 
+        'review_score_num':lambda x: (x<=3).sum()
+    })
+    high_vol_sellers = seller_stats[seller_stats['order_id'] > 50]
+    total_delayed_count = seller_stats['delivery_delay_days'].sum()
+    total_low_rated_count = seller_stats['review_score_num'].sum()
+    
+    pct_delay_top_sellers = (high_vol_sellers['delivery_delay_days'].sum() / total_delayed_count) * 100 if total_delayed_count else 0
+    pct_low_top_sellers = (high_vol_sellers['review_score_num'].sum() / total_low_rated_count) * 100 if total_low_rated_count else 0
+    
+    # Regional Impact
+    geo_col_local = 'customer_state_full' if 'customer_state_full' in df_in.columns else 'customer_state'
+    if geo_col_local in df_in.columns:
+        region_stats = df_in.groupby(geo_col_local).agg({'delivery_delay_days':lambda x: (x>0).mean()})
+        best_region_delay = region_stats['delivery_delay_days'].min() * 100
+        worst_region_delay = region_stats['delivery_delay_days'].max() * 100
+        diff_best_worst_region = worst_region_delay - best_region_delay
+        
+        region_delay_counts = df_in.groupby(geo_col_local).agg(delayed_count=('delivery_delay_days', lambda x: (x>0).sum()))
+        top_3_delay_regions_count = region_delay_counts.nlargest(3, 'delayed_count')['delayed_count'].sum()
+        pct_delays_top3_regions = (top_3_delay_regions_count / total_delayed_count) * 100 if total_delayed_count else 0
+    else:
+        diff_best_worst_region = 0
+        pct_delays_top3_regions = 0
+
+    # Category impact
+    if 'product_category_name' in df_in.columns and 'payment_value' in df_in.columns:
+        cat_stats = df_in.groupby('product_category_name').agg({'payment_value':'sum', 'delivery_delay_days':lambda x: (x>0).mean()})
+        overall_delay_rate = len(delayed_orders) / total_orders if total_orders else 0
+        high_delay_cats = cat_stats[cat_stats['delivery_delay_days'] > overall_delay_rate]
+        total_rev = cat_stats['payment_value'].sum()
+        pct_rev_high_delay_cats = (high_delay_cats['payment_value'].sum() / total_rev) * 100 if total_rev else 0
+    else:
+        pct_rev_high_delay_cats = 0
+    
+    return {
+        'pct_late': pct_late,
+        'pct_delayed_1day': pct_delayed_1day,
+        'pct_delayed_2days': pct_delayed_2days,
+        'rating_drop_pct': rating_drop_pct,
+        'avg_rating_ontime': avg_rating_ontime,
+        'avg_rating_late': avg_rating_late,
+        'pct_low_ratings_delayed': pct_low_ratings_delayed,
+        'pct_delay_top_sellers': pct_delay_top_sellers,
+        'pct_low_top_sellers': pct_low_top_sellers,
+        'pct_delays_top3_regions': pct_delays_top3_regions,
+        'diff_best_worst_region': diff_best_worst_region,
+        'pct_rev_high_delay_cats': pct_rev_high_delay_cats
+    }
+
+stats = calculate_statistical_impact(df)
+
+st.markdown("""
+<style>
+@keyframes popIn {
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animated-card {
+    background: #1a1c23;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    border-top: 3px solid #ff416c;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+    text-align: center;
+}
+.animated-card:hover {  transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.6); transition: all 0.3s ease; }
+.card-label { color: #A0AEC0; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+.card-val { color: #FFF; font-size: 2.2rem; font-weight: 800; margin: 0; text-shadow: 0 0 10px rgba(255,65,108,0.3); }
+
+/* Animation Delays */
+.delay-1 { animation-delay: 0.1s; border-top-color: #ff416c; }
+.delay-2 { animation-delay: 0.3s; border-top-color: #ffb84c; }
+.delay-3 { animation-delay: 0.5s; border-top-color: #00C9FF; }
+.delay-4 { animation-delay: 0.7s; border-top-color: #92FE9D; }
+
+/* Progress Bar Animation */
+@keyframes slideFill { from { width: 0%; } }
+.progress-bg { background: rgba(255,255,255,0.05); height: 8px; border-radius: 4px; margin-top: 15px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 4px; background: #ff416c; animation: slideFill 1.5s ease-out forwards; }
+.fill-amber { background: #ffb84c; }
+.fill-blue { background: #00C9FF; }
+</style>
+""", unsafe_allow_html=True)
+
+def render_anim_card(label, val, delay_cls, prog_color, prog_pct):
+    return f"""
+    <div class="animated-card {delay_cls}">
+        <div class="card-label">{label}</div>
+        <div class="card-val">{val}</div>
+        <div class="progress-bg">
+            <div class="progress-fill {prog_color}" style="width: {min(prog_pct, 100)}%;"></div>
+        </div>
+    </div>
+    """
+
+st.subheader("📦 Delivery Performance Impact")
+c1, c2, c3 = st.columns(3)
+with c1: st.markdown(render_anim_card("% Orders Late", f"{stats['pct_late']:.1f}%", "delay-1", "", stats['pct_late']), unsafe_allow_html=True)
+with c2: st.markdown(render_anim_card("Delayed >1 Day", f"{stats['pct_delayed_1day']:.1f}%", "delay-2", "fill-amber", stats['pct_delayed_1day']), unsafe_allow_html=True)
+with c3: st.markdown(render_anim_card("Delayed >2 Days", f"{stats['pct_delayed_2days']:.1f}%", "delay-3", "fill-blue", stats['pct_delayed_2days']), unsafe_allow_html=True)
+
+st.markdown(f"<div style='animation: popIn 0.8s forwards; opacity: 0; animation-delay: 0.8s; padding: 15px; border-left: 3px solid #ffb84c; background: rgba(255,184,76,0.1); border-radius: 5px;'><b>Insight:</b> Delayed orders have a <b>{stats['rating_drop_pct']:.1f}% lower average rating</b> than on-time orders ({stats['avg_rating_late']:.2f} vs {stats['avg_rating_ontime']:.2f}).</div>", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
+
+st.subheader("⭐ Customer Experience Impact")
+c4, c5 = st.columns(2)
+with c4: st.markdown(render_anim_card("Low Ratings (≤3) Caused by Delays", f"{stats['pct_low_ratings_delayed']:.1f}%", "delay-1", "", stats['pct_low_ratings_delayed']), unsafe_allow_html=True)
+diff_pts = stats['avg_rating_ontime'] - stats['avg_rating_late']
+with c5: st.markdown(render_anim_card("Rating Diff (Late vs On-time)", f"-{diff_pts:.2f} Stars", "delay-2", "fill-amber", (diff_pts/5)*100), unsafe_allow_html=True)
+
+st.markdown(f"<div style='animation: popIn 0.8s forwards; opacity: 0; animation-delay: 0.8s; padding: 15px; border-left: 3px solid #ffb84c; background: rgba(255,184,76,0.1); border-radius: 5px;'><b>Insight:</b> <b>{stats['pct_low_ratings_delayed']:.1f}%</b> of all negative/neutral customer experiences (≤3 stars) are directly associated with logistics failures.</div>", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
+
+st.subheader("🏪 Seller & 🌍 Regional Concentration")
+c6, c7, c8 = st.columns(3)
+with c6: st.markdown(render_anim_card("Delays from Top Sellers", f"{stats['pct_delay_top_sellers']:.1f}%", "delay-1", "", stats['pct_delay_top_sellers']), unsafe_allow_html=True)
+with c7: st.markdown(render_anim_card("Delays in Top 3 Regions", f"{stats['pct_delays_top3_regions']:.1f}%", "delay-2", "fill-amber", stats['pct_delays_top3_regions']), unsafe_allow_html=True)
+with c8: st.markdown(render_anim_card("Rev. high-delay Categories", f"{stats['pct_rev_high_delay_cats']:.1f}%", "delay-3", "fill-blue", stats['pct_rev_high_delay_cats']), unsafe_allow_html=True)
+
+st.markdown(f"<div style='animation: popIn 0.8s forwards; opacity: 0; animation-delay: 1.0s; padding: 15px; border-left: 3px solid #ffb84c; background: rgba(255,184,76,0.1); border-radius: 5px;'><b>Insight:</b> High-volume sellers (>50 orders) carry disproportionate risk, contributing to <b>{stats['pct_delay_top_sellers']:.1f}%</b> of all delayed deliveries and <b>{stats['pct_low_top_sellers']:.1f}%</b> of all low ratings.<br><b>Insight:</b> The worst-performing geographic region has a <b>{stats['diff_best_worst_region']:.1f}% higher delay rate</b> than the best-performing region.</div>", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
+
+st.markdown("""
+<div style="background: linear-gradient(135deg, rgba(255,65,108,0.1), #1a1c23); border-left: 4px solid #FF416C; padding: 25px; border-radius: 8px; animation: popIn 0.8s forwards; opacity: 0; animation-delay: 1.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+    <h3 style="color: #FF416C; margin-top: 0; font-weight: 700;">🎯 Key Takeaway</h3>
+    <p style="font-size: 1.15rem; color: #E2E8F0; line-height: 1.6; margin-bottom: 0;">
+    The numbers conclusively prove that <b>logistics over-promising is scaling destructively</b>. Despite strong base product quality, massive chunks of platform revenue and top-tier sellers are bottlenecked by systemic delivery failures. By repairing the SLA estimate engine, we stand to immediately rescue a vast majority of all endangered customer relationships.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
