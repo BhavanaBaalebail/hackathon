@@ -1,7 +1,12 @@
+# --- Core Dashboard ---
 streamlit
 pandas
 numpy
+plotly
+statsmodels
+openpyxl
+
+# --- Machine Learning & Analysis ---
 scikit-learn
 matplotlib
 seaborn
-openpyxl
