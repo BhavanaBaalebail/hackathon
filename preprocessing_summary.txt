@@ -1,0 +1,96 @@
+=== FILE DISCOVERY ===
+Files found in folder: ['preprocess.py', 'NexaCart Data.xlsx', 'explore.py']
+Loading: /Users/bhavanabaalebail/Documents/hack/NexaCart Data.xlsx (Size: 78723531 bytes)
+
+* sellers_dataset: (3095, 4)
+* product_category_name_translati: (72, 2)
+* products_dataset: (32951, 9)
+* order_reviews_dataset: (99224, 5)
+* orders_dataset: (99441, 8)
+* order_payments_dataset: (103886, 5)
+* order_items_dataset: (112650, 7)
+* geolocation_dataset: (1000163, 5)
+* customers_dataset: (99441, 5)
+
+=== MERGE REPORT ===
+Starting shape (orders): (99441, 8)
+After merging order_items: (113425, 14)
+After merging products: (113425, 22)
+After merging customers: (113425, 26)
+After merging sellers: (113425, 29)
+After merging order_reviews: (114092, 33)
+After merging order_payments: (119143, 37)
+After merging geolocation: (119143, 42)
+Final master shape: (119143, 42)
+
+=== MISSING VALUES ===
+Missing count before -> after cleaning:
+order_approved_at: 177 -> 177
+order_delivered_carrier_date: 2086 -> 2086
+order_delivered_customer_date: 3421 -> 3421
+order_item_id: 833 -> 0
+product_id: 833 -> 0
+seller_id: 833 -> 0
+shipping_limit_date: 833 -> 833
+price: 833 -> 0
+freight_value: 833 -> 0
+product_category_name: 2542 -> 0
+product_name_lenght: 2542 -> 0
+product_description_lenght: 2542 -> 0
+product_photos_qty: 2542 -> 0
+product_weight_g: 853 -> 0
+product_length_cm: 853 -> 0
+product_height_cm: 853 -> 0
+product_width_cm: 853 -> 0
+seller_zip_code_prefix: 833 -> 0
+seller_city: 833 -> 0
+seller_state: 833 -> 0
+review_id: 997 -> 0
+review_score: 997 -> 0
+review_creation_date: 997 -> 997
+review_answer_timestamp: 997 -> 997
+payment_sequential: 3 -> 0
+payment_type: 3 -> 0
+payment_installments: 3 -> 0
+payment_value: 3 -> 0
+geolocation_zip_code_prefix: 322 -> 0
+geolocation_lat: 322 -> 0
+geolocation_lng: 322 -> 0
+geolocation_city: 322 -> 0
+geolocation_state: 322 -> 0
+
+=== NEW FEATURES CREATED ===
+* order_month_year
+* delivery_performance_bucket
+* review_sentiment
+* freight_to_price_ratio
+* is_high_value
+* seller_order_count
+* seller_avg_review
+* seller_avg_delay
+* customer_order_count
+* is_repeat_customer
+* same_state_delivery
+
+=== OUTLIERS ===
+price: 1186 outliers detected (>99th percentile). Capping at 890.00
+freight_value: 1191 outliers detected (>99th percentile). Capping at 84.66
+payment_value: 1192 outliers detected (>99th percentile). Capping at 1222.88
+delivery_time_days: 350 outliers detected (>60 days). Flagged as is_suspicious_delivery.
+
+=== DATA OVERVIEW ===
+Date range of orders: 2016-09-04 21:15:19 to 2018-10-17 17:30:18
+Total unique customers: 96096
+Total unique sellers: 3096
+Total unique products: 32952
+Total unique categories: 74
+
+=== BUSINESS KPIs ===
+Average delivery delay in days: -11.37
+% of late orders: 7.61%
+% of very late orders (>3 days): 5.01%
+Average review score overall: 4.02
+% of negative reviews (score 1-2): 16.44%
+Top 5 product categories by order volume: cama_mesa_banho, beleza_saude, esporte_lazer, moveis_decoracao, informatica_acessorios
+Top 5 states by order volume: SP, RJ, MG, RS, PR
+Average freight to price ratio: 0.3215
